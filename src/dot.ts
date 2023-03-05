@@ -43,7 +43,7 @@ class JestReporterDot implements Reporter {
   tests: number[] = []
 
   estimatedTime = 0
-  clock: NodeJS.Timeout
+  clock: NodeJS.Timeout = null
 
   disabled: boolean = false
 
@@ -73,15 +73,16 @@ class JestReporterDot implements Reporter {
 
     this.bar = new Array(numTotalTestSuites).fill(TestStatus.pending)
     this.tests = new Array(numTotalTestSuites).fill(0)
+    this.current = 0
 
     this.estimatedTime = options.estimatedTime
 
-    this.clock = setInterval(this.tick.bind(this), 1000)
+    if (this.estimatedTime > 0)
+      this.clock = setInterval(this.tick.bind(this), 1000)
 
     process.stderr.write(color.gray`\nFound ${numTotalTestSuites} suites.\n`)
 
-    this.current = 0
-    this.saveCursor()
+    this.saveCursor(numTotalTestSuites)
     this.push()
   }
 
@@ -131,8 +132,10 @@ class JestReporterDot implements Reporter {
   ) {
     if (this.disabled) return
 
-    clearInterval(this.clock)
-    this.estimatedTime = 0
+    if (this.clock) {
+      clearInterval(this.clock)
+      this.clock = null
+    }
 
     this.push()
 
@@ -164,7 +167,6 @@ class JestReporterDot implements Reporter {
 
   private push() {
     this.restoreCursor()
-    this.saveCursor()
 
     process.stderr.write("[")
 
@@ -191,17 +193,18 @@ class JestReporterDot implements Reporter {
     process.stderr.write("] ")
     process.stderr.write(`${percent}% `)
     process.stderr.write(`(${completed}/${total})`)
+    process.stderr.write(`\n`)
 
-    if (this.estimatedTime > 0)
-      process.stderr.write(`\nEstimated ${this.estimatedTime} sec.`)
-    else if (this.estimatedTime == 0) {
-      process.stderr.write(`\n\u001B[2K`)
-
-      this.estimatedTime = -1
+    if (this.clock) {
+      process.stderr.write(`Estimated ${this.estimatedTime} sec.`)
     }
   }
 
-  private saveCursor() {
+  private saveCursor(suites: number) {
+    const width = process.stderr.columns
+    const rows = Math.ceil((suites + 20) / width)
+
+    process.stderr.write(`\u001B[${rows}B \r\u001B[${rows}A\u001B[0J`)
     process.stderr.write(isTerminalApp ? "\u001B7" : "\u001B[s")
   }
 
