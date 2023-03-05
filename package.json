@@ -1,23 +1,36 @@
 {
   "name": "jest-reporter-dot",
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "private": false,
   "description": "A better Dot reporter for Jest.",
-  "main": "dist/index.cjs",
   "repository": {
     "type": "git",
     "url": "https://github.com/kireevmp/jest-reporter-dot.git"
   },
+  "license": "MIT",
+  "author": "kireevmp",
+  "type": "module",
   "exports": {
     "require": "./dist/index.cjs",
     "import": "./dist/index.mjs",
     "default": "./dist/index.cjs"
   },
-  "type": "module",
-  "author": "kireevmp",
-  "license": "MIT",
-  "private": false,
+  "main": "dist/index.cjs",
+  "bugs": {
+    "url": "https://github.com/kireevmp/jest-reporter-dot/issues"
+  },
+  "homepage": "https://github.com/kireevmp/jest-reporter-dot#readme",
+  "keywords": [
+    "jest",
+    "reporter",
+    "dot",
+    "progress-bar"
+  ],
   "scripts": {
     "build": "rollup -c"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2"
   },
   "devDependencies": {
     "@jest/reporters": "^29.4.3",
@@ -26,8 +39,5 @@
     "rollup": "^3.18.0",
     "tslib": "^2.5.0",
     "typescript": "^4.9.5"
-  },
-  "dependencies": {
-    "chalk": "^4.1.2"
   }
 }

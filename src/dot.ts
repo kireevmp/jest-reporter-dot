@@ -37,26 +37,46 @@ const enum TestStatus {
 class JestReporterDot implements Reporter {
   map: Map<string, number> = new Map()
 
+  current = 0
   bar: TestStatus[] = []
+
   tests: number[] = []
 
-  current = 0
-  estimated = 0
+  estimatedTime = 0
+  clock: NodeJS.Timeout
+
+  disabled: boolean = false
 
   globalConfig: Config.GlobalConfig
 
   constructor(globalConfig: Config.GlobalConfig) {
     this.globalConfig = globalConfig
+
+    if (globalConfig.verbose) {
+      this.disabled = true
+    }
   }
 
   public onRunStart(
     { numTotalTestSuites }: AggregatedResult,
     options: ReporterOnStartOptions
   ) {
+    if (this.disabled) {
+      process.stderr.write(
+        chalk.yellow.bold`\n[JestReporterDot] ` +
+          chalk.yellow`The dot reporter is not compatible with Jest ${chalk.italic`"verobse"`} option. ` +
+          chalk.yellow`The reporter will be disabled for this run.\n`
+      )
+
+      return
+    }
+
     this.bar = new Array(numTotalTestSuites).fill(TestStatus.pending)
     this.tests = new Array(numTotalTestSuites).fill(0)
 
-    this.estimated = options.estimatedTime
+    this.estimatedTime = options.estimatedTime
+
+    this.clock = setInterval(this.tick.bind(this), 1000)
 
     process.stderr.write(color.gray`\nFound ${numTotalTestSuites} suites.\n`)
 
@@ -66,6 +86,8 @@ class JestReporterDot implements Reporter {
   }
 
   public onTestFileStart(test: Test) {
+    if (this.disabled) return
+
     const our = this.current++
     this.map.set(test.path, our)
 
@@ -74,6 +96,8 @@ class JestReporterDot implements Reporter {
   }
 
   public onTestCaseResult(test: Test) {
+    if (this.disabled) return
+
     const our = this.map.get(test.path) ?? 0
 
     this.tests[our]++
@@ -81,6 +105,8 @@ class JestReporterDot implements Reporter {
   }
 
   public onTestFileResult(test: Test, result: TestResult) {
+    if (this.disabled) return
+
     const our = this.map.get(test.path) ?? 0
 
     this.bar[our] =
@@ -103,9 +129,12 @@ class JestReporterDot implements Reporter {
       startTime,
     }: AggregatedResult
   ) {
-    this.push()
+    if (this.disabled) return
 
-    process.stderr.write("\n")
+    clearInterval(this.clock)
+    this.estimatedTime = 0
+
+    this.push()
 
     const elapsed = (Date.now() - startTime) / 1000
     const time = elapsed.toFixed(2)
@@ -157,10 +186,19 @@ class JestReporterDot implements Reporter {
       }
     }
 
-    process.stderr.write("] ")
-    process.stderr.write(`${completed}/${total}`)
+    const percent = ((100 * completed) / total).toFixed(0)
 
-    if (this.estimated) process.stderr.write(`; est. ${this.estimated} sec.`)
+    process.stderr.write("] ")
+    process.stderr.write(`${percent}% `)
+    process.stderr.write(`(${completed}/${total})`)
+
+    if (this.estimatedTime > 0)
+      process.stderr.write(`\nEstimated ${this.estimatedTime} sec.`)
+    else if (this.estimatedTime == 0) {
+      process.stderr.write(`\n\u001B[2K`)
+
+      this.estimatedTime = -1
+    }
   }
 
   private saveCursor() {
@@ -178,6 +216,10 @@ class JestReporterDot implements Reporter {
     if (tests == 2 || tests == 4) return "⠔"
 
     return "⠶"
+  }
+
+  private tick() {
+    this.estimatedTime = Math.max(0, this.estimatedTime - 1)
   }
 
   getLastError() {}

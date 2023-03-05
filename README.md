@@ -17,7 +17,7 @@ $ yarn add --dev jest-reporter-dot
 ## Example
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/29187880/222933289-a3ab5b17-f476-483d-91b5-e6d4bffa250a.gif" alt="Usage example" width="600px" />
+  <img src="https://user-images.githubusercontent.com/29187880/222956128-df6dd344-b0a4-4295-a074-83972165b33a.gif" alt="Usage example" width="600px" />
 </p>
 
 ## Configuration
