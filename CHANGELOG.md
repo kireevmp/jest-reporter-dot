@@ -1,3 +1,8 @@
+## v0.3.0
+
+- Now display failing suites that did not run any tests.
+- Improved the pattern in the bar.
+
 ## v0.2.0
 
 ### Features

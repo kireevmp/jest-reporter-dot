@@ -18,6 +18,7 @@ const color = {
   working: chalk.yellow,
   skipped: chalk.magenta,
   gray: chalk.gray,
+  bold: chalk.bold,
 }
 
 const status = {
@@ -111,7 +112,7 @@ class JestReporterDot implements Reporter {
     const our = this.map.get(test.path) ?? 0
 
     this.bar[our] =
-      result.numFailingTests > 0
+      result.numFailingTests > 0 || result.numPassingTests === 0
         ? TestStatus.fail
         : result.skipped || result.numPendingTests > 0
         ? TestStatus.skipped
@@ -127,6 +128,7 @@ class JestReporterDot implements Reporter {
       numPassedTests,
       numPendingTests,
       numTotalTests,
+      numFailedTestSuites,
       startTime,
     }: AggregatedResult
   ) {
@@ -161,7 +163,14 @@ class JestReporterDot implements Reporter {
 
     if (numFailedTests > 0) {
       process.stderr.write(color.fail.bold`${status.fail} ${numFailedTests}`)
-      process.stderr.write(color.fail` failing.\n`)
+      process.stderr.write(
+        color.fail` failing in ${numFailedTestSuites} suites.\n`
+      )
+    } else if (numFailedTestSuites > 0) {
+      process.stderr.write(
+        color.fail.bold`${status.fail} ${numFailedTestSuites}`
+      )
+      process.stderr.write(color.fail` failing suites.\n`)
     }
   }
 
@@ -181,7 +190,7 @@ class JestReporterDot implements Reporter {
       else {
         const isWorking = status === TestStatus.working
 
-        const symbol = this.getPattern(isWorking ? tests : -1)
+        const symbol = this.getPattern(tests, status)
         process.stderr.write(color[status](symbol))
 
         completed += isWorking ? 0 : 1
@@ -212,13 +221,18 @@ class JestReporterDot implements Reporter {
     process.stderr.write(isTerminalApp ? "\u001B8" : "\u001B[u")
   }
 
-  private getPattern(tests: number) {
-    if (tests == 0) return "⠢"
-    if (tests == -1 || tests >= 7) return "⣿"
-    if (tests == 1 || tests == 3) return "⠢"
-    if (tests == 2 || tests == 4) return "⠔"
+  private getPattern(tests: number, status: TestStatus) {
+    if (tests === 0)
+      if (status === TestStatus.fail) return color.bold`⣉`
+      else return "⠢"
 
-    return "⠶"
+    if (status !== TestStatus.working) return "⣿"
+
+    if (tests >= 15) return "⢷"
+    if (tests >= 10) return "⠶"
+    if (tests % 2 === 1) return "⠢"
+
+    return "⠔"
   }
 
   private tick() {
